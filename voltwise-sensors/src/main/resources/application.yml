@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: voltwise-sensors
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: voltwise-sensors
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+voltwise:
+  kafka:
+    telemetry-topic: ${KAFKA_TELEMETRY_TOPIC:voltwise.telemetry}
+    registration-topic: ${KAFKA_REGISTRATION_TOPIC:voltwise.registration}
+  simulation:
+    interval-ms: ${SIMULATION_INTERVAL_MS:2000}
+    anomaly-probability: ${SIMULATION_ANOMALY_PROBABILITY:0.15}
+
+logging:
+  level:
+    com.voltwise: INFO
