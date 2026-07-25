@@ -1,6 +1,9 @@
 package com.voltwise.core.home.service;
 
+import com.voltwise.core.ai.domain.AiRecommendation;
+import com.voltwise.core.ai.domain.AiRecommendationRepository;
 import com.voltwise.core.common.exception.ResourceNotFoundException;
+import com.voltwise.core.common.exception.UnauthorizedException;
 import com.voltwise.core.common.state.ApplianceLiveMetric;
 import com.voltwise.core.common.state.HomeLiveState;
 import com.voltwise.core.common.state.LiveStateStore;
@@ -10,13 +13,21 @@ import com.voltwise.core.home.domain.ConsumptionSnapshotRepository;
 import com.voltwise.core.home.domain.Home;
 import com.voltwise.core.home.domain.HomeRepository;
 import com.voltwise.core.home.dto.ApplianceStatusResponse;
+import com.voltwise.core.home.dto.ConsumerLoginRequest;
+import com.voltwise.core.home.dto.ConsumerLoginResponse;
 import com.voltwise.core.home.dto.ConsumptionHistoryPoint;
 import com.voltwise.core.home.dto.HomeRegisteredResponse;
 import com.voltwise.core.home.dto.HomeStatusResponse;
 import com.voltwise.core.home.dto.HomeSummaryResponse;
+import com.voltwise.core.home.dto.RecommendationResponse;
 import com.voltwise.core.home.dto.RegisterHomeRequest;
+import com.voltwise.core.common.web.PagedResponse;
 import com.voltwise.core.home.messaging.RegistrationEvent;
 import com.voltwise.core.home.messaging.RegistrationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,17 +39,23 @@ public class HomeService {
 
     private final HomeRepository homeRepository;
     private final ConsumptionSnapshotRepository snapshotRepository;
+    private final AiRecommendationRepository recommendationRepository;
     private final LiveStateStore liveStateStore;
     private final RegistrationEventPublisher registrationEventPublisher;
+    private final PasswordEncoder passwordEncoder;
 
     public HomeService(HomeRepository homeRepository,
                        ConsumptionSnapshotRepository snapshotRepository,
+                       AiRecommendationRepository recommendationRepository,
                        LiveStateStore liveStateStore,
-                       RegistrationEventPublisher registrationEventPublisher) {
+                       RegistrationEventPublisher registrationEventPublisher,
+                       PasswordEncoder passwordEncoder) {
         this.homeRepository = homeRepository;
         this.snapshotRepository = snapshotRepository;
+        this.recommendationRepository = recommendationRepository;
         this.liveStateStore = liveStateStore;
         this.registrationEventPublisher = registrationEventPublisher;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -46,6 +63,7 @@ public class HomeService {
         Home home = new Home();
         home.setName(request.name());
         home.setContactEmail(request.contactEmail());
+        home.setPasswordHash(passwordEncoder.encode(request.password()));
         home.setBudgetLimit(request.budgetLimit());
         home.setBaseRatePerKwh(request.baseRatePerKwh());
         request.appliances().forEach(applianceRequest -> {
@@ -65,6 +83,15 @@ public class HomeService {
     }
 
     @Transactional(readOnly = true)
+    public ConsumerLoginResponse consumerLogin(ConsumerLoginRequest request) {
+        return homeRepository.findByContactEmailIgnoreCase(request.email().trim()).stream()
+                .filter(home -> passwordEncoder.matches(request.password(), home.getPasswordHash()))
+                .findFirst()
+                .map(home -> new ConsumerLoginResponse(home.getId(), home.getName()))
+                .orElseThrow(() -> new UnauthorizedException("E-posta veya şifre hatalı"));
+    }
+
+    @Transactional(readOnly = true)
     public List<HomeSummaryResponse> listSummaries() {
         return liveStateStore.findAll().stream()
                 .sorted(Comparator.comparing(HomeLiveState::getHomeId))
@@ -80,13 +107,28 @@ public class HomeService {
     }
 
     @Transactional(readOnly = true)
-    public List<ConsumptionHistoryPoint> getHistory(Long homeId) {
+    public PagedResponse<ConsumptionHistoryPoint> getHistory(Long homeId, int page, int size) {
         if (!homeRepository.existsById(homeId)) {
             throw new ResourceNotFoundException("Home " + homeId + " is not registered");
         }
-        return snapshotRepository.findByHomeIdOrderByRecordedAtAsc(homeId).stream()
-                .map(this::toHistoryPoint)
-                .toList();
+        Page<ConsumptionSnapshot> result = snapshotRepository.findByHomeId(homeId,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "recordedAt")));
+        return PagedResponse.of(result, result.getContent().stream().map(this::toHistoryPoint).toList());
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<RecommendationResponse> getRecommendations(Long homeId, int page, int size) {
+        if (!homeRepository.existsById(homeId)) {
+            throw new ResourceNotFoundException("Home " + homeId + " is not registered");
+        }
+        Page<AiRecommendation> result = recommendationRepository.findByHomeId(homeId,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        return PagedResponse.of(result, result.getContent().stream().map(this::toRecommendationResponse).toList());
+    }
+
+    private RecommendationResponse toRecommendationResponse(AiRecommendation recommendation) {
+        return new RecommendationResponse(recommendation.getId(), recommendation.getTriggerReason(),
+                recommendation.getContent(), recommendation.isDelivered(), recommendation.getCreatedAt());
     }
 
     private HomeLiveState toLiveState(Home home) {

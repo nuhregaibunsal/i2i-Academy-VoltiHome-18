@@ -1,10 +1,10 @@
 package com.voltwise.core.ai.domain;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.List;
 
 public interface AiRecommendationRepository extends JpaRepository<AiRecommendation, Long> {
 
-    List<AiRecommendation> findByHomeIdOrderByCreatedAtDesc(Long homeId);
+    Page<AiRecommendation> findByHomeId(Long homeId, Pageable pageable);
 }

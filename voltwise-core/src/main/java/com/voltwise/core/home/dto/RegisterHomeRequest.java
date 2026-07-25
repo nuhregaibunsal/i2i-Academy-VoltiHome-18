@@ -5,12 +5,14 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
 public record RegisterHomeRequest(
         @NotBlank(message = "home name is required") String name,
         @NotBlank @Email(message = "a valid contact email is required") String contactEmail,
+        @NotBlank @Size(min = 4, message = "password must be at least 4 characters") String password,
         @Positive(message = "budgetLimit must be positive") double budgetLimit,
         @Positive(message = "baseRatePerKwh must be positive") double baseRatePerKwh,
         @NotEmpty(message = "at least one appliance is required") @Valid List<ApplianceRequest> appliances) {

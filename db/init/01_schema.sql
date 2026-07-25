@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS home (
     id                BIGSERIAL PRIMARY KEY,
     name              VARCHAR(255)      NOT NULL,
     contact_email     VARCHAR(255)      NOT NULL,
+    password_hash     VARCHAR(255)      NOT NULL,
     budget_limit      DOUBLE PRECISION  NOT NULL,
     base_rate_per_kwh DOUBLE PRECISION  NOT NULL,
     accumulated_cost  DOUBLE PRECISION  NOT NULL DEFAULT 0,

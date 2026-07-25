@@ -33,6 +33,9 @@ public class Home {
     @Column(name = "contact_email", nullable = false)
     private String contactEmail;
 
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
     @Column(name = "budget_limit", nullable = false)
     private double budgetLimit;
 

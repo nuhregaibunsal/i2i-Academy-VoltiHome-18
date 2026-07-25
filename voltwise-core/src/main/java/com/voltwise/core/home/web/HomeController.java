@@ -4,7 +4,9 @@ import com.voltwise.core.home.dto.ConsumptionHistoryPoint;
 import com.voltwise.core.home.dto.HomeRegisteredResponse;
 import com.voltwise.core.home.dto.HomeStatusResponse;
 import com.voltwise.core.home.dto.HomeSummaryResponse;
+import com.voltwise.core.home.dto.RecommendationResponse;
 import com.voltwise.core.home.dto.RegisterHomeRequest;
+import com.voltwise.core.common.web.PagedResponse;
 import com.voltwise.core.home.service.HomeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -50,8 +53,18 @@ public class HomeController {
     }
 
     @GetMapping("/{homeId}/history")
-    @Operation(summary = "Get the persisted daily consumption history of a home from PostgreSQL")
-    public List<ConsumptionHistoryPoint> history(@PathVariable Long homeId) {
-        return homeService.getHistory(homeId);
+    @Operation(summary = "Get the paginated consumption history of a home from PostgreSQL (newest first)")
+    public PagedResponse<ConsumptionHistoryPoint> history(@PathVariable Long homeId,
+                                                          @RequestParam(defaultValue = "0") int page,
+                                                          @RequestParam(defaultValue = "100") int size) {
+        return homeService.getHistory(homeId, page, size);
+    }
+
+    @GetMapping("/{homeId}/recommendations")
+    @Operation(summary = "Get the paginated AI advisory history of a home from PostgreSQL (newest first)")
+    public PagedResponse<RecommendationResponse> recommendations(@PathVariable Long homeId,
+                                                                 @RequestParam(defaultValue = "0") int page,
+                                                                 @RequestParam(defaultValue = "20") int size) {
+        return homeService.getRecommendations(homeId, page, size);
     }
 }
