@@ -23,7 +23,7 @@ public class TariffEvaluator {
         List<AlertTrigger> triggers = new ArrayList<>();
 
         double energyWh = message.watt() * message.intervalSeconds() / 3600d;
-        double effectiveRate = state.getBaseRatePerKwh() * (state.isPenaltyActive() ? config.getPenaltyMultiplier() : 1d);
+        double effectiveRate = state.getBaseRatePerKwh() * tariffMultiplier(state.budgetUsageRatio());
         double costDelta = (energyWh / 1000d) * effectiveRate;
 
         state.setAccumulatedEnergyWh(state.getAccumulatedEnergyWh() + energyWh);
@@ -33,6 +33,17 @@ public class TariffEvaluator {
         evaluateQuota(state, triggers);
 
         return triggers;
+    }
+
+    public double tariffMultiplier(double usageRatio) {
+        if (usageRatio < config.getBreachThreshold()) {
+            return 1d;
+        }
+        int tier = (int) Math.floor((usageRatio - config.getBreachThreshold()) / config.getPenaltyStep());
+        if (tier < 0) {
+            tier = 0;
+        }
+        return config.getPenaltyMultiplier() + tier * config.getPenaltyIncrement();
     }
 
     private void evaluateAppliance(HomeLiveState state, TelemetryMessage message, double energyWh,
@@ -70,7 +81,9 @@ public class TariffEvaluator {
             if (!state.isPenaltyActive()) {
                 state.setPenaltyActive(true);
                 triggers.add(AlertTrigger.silent(EventType.PENALTY_TARIFF_ACTIVATED,
-                        "Penalty tariff activated at x" + config.getPenaltyMultiplier() + " rate"));
+                        "Graduated penalty tariff activated (starts at x" + config.getPenaltyMultiplier()
+                                + ", +" + config.getPenaltyIncrement() + " each "
+                                + Math.round(config.getPenaltyStep() * 100) + "% over budget)"));
             }
         } else if (ratio >= config.getWarningThreshold() && !state.isWarnedAt80()) {
             state.setWarnedAt80(true);

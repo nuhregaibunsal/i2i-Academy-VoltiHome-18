@@ -49,6 +49,9 @@ voltwise:
     warning-threshold: ${QUOTA_WARNING_THRESHOLD:0.8}
     breach-threshold: ${QUOTA_BREACH_THRESHOLD:1.0}
     penalty-multiplier: ${PENALTY_MULTIPLIER:1.5}
+    penalty-step: ${PENALTY_STEP:0.2}
+    penalty-increment: ${PENALTY_INCREMENT:0.5}
+    dominant-appliance-threshold: ${DOMINANT_APPLIANCE_THRESHOLD:0.5}
     consecutive-breach-limit: ${CONSECUTIVE_BREACH_LIMIT:3}
   mail:
     from: ${MAIL_FROM:voltwise@example.com}

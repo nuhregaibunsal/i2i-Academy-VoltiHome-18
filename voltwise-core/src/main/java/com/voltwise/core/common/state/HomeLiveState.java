@@ -21,6 +21,7 @@ public class HomeLiveState implements Serializable {
     private boolean penaltyActive;
     private boolean warnedAt80;
     private boolean breachedAt100;
+    private Long dominantAdviceApplianceId;
     private Map<Long, ApplianceLiveMetric> appliances = new LinkedHashMap<>();
 
     public double budgetUsageRatio() {

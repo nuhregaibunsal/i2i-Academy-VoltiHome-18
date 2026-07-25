@@ -37,6 +37,9 @@ public class VoltWiseProperties {
         private double warningThreshold;
         private double breachThreshold;
         private double penaltyMultiplier;
+        private double penaltyStep;
+        private double penaltyIncrement;
+        private double dominantApplianceThreshold;
         private int consecutiveBreachLimit;
     }
 
