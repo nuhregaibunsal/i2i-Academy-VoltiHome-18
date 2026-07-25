@@ -1,0 +1,118 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: voltwise-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-voltwise}
+      POSTGRES_USER: ${POSTGRES_USER:-voltwise}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-voltwise}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-voltwise} -d ${POSTGRES_DB:-voltwise}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: voltwise-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  ignite:
+    image: apacheignite/ignite:2.16.0
+    container_name: voltwise-ignite
+    environment:
+      OPTION_LIBS: ignite-rest-http
+      JVM_OPTS: "-Xms256m -Xmx512m"
+    ports:
+      - "10800:10800"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/10800'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  core:
+    build: ./voltwise-core
+    container_name: voltwise-core
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      ignite:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-voltwise}
+      POSTGRES_USER: ${POSTGRES_USER:-voltwise}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-voltwise}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TELEMETRY_TOPIC: ${KAFKA_TELEMETRY_TOPIC:-voltwise.telemetry}
+      KAFKA_REGISTRATION_TOPIC: ${KAFKA_REGISTRATION_TOPIC:-voltwise.registration}
+      IGNITE_HOST: ignite
+      IGNITE_PORT: 10800
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-voltwise@example.com}
+      QUOTA_WARNING_THRESHOLD: ${QUOTA_WARNING_THRESHOLD:-0.8}
+      QUOTA_BREACH_THRESHOLD: ${QUOTA_BREACH_THRESHOLD:-1.0}
+      PENALTY_MULTIPLIER: ${PENALTY_MULTIPLIER:-1.5}
+      PENALTY_STEP: ${PENALTY_STEP:-0.2}
+      PENALTY_INCREMENT: ${PENALTY_INCREMENT:-0.5}
+      DOMINANT_APPLIANCE_THRESHOLD: ${DOMINANT_APPLIANCE_THRESHOLD:-0.5}
+      CONSECUTIVE_BREACH_LIMIT: ${CONSECUTIVE_BREACH_LIMIT:-3}
+    ports:
+      - "8080:8080"
+
+  sensors:
+    build: ./voltwise-sensors
+    container_name: voltwise-sensors
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TELEMETRY_TOPIC: ${KAFKA_TELEMETRY_TOPIC:-voltwise.telemetry}
+      KAFKA_REGISTRATION_TOPIC: ${KAFKA_REGISTRATION_TOPIC:-voltwise.registration}
+      SIMULATION_INTERVAL_MS: ${SIMULATION_INTERVAL_MS:-2000}
+
+  webapp:
+    build: ./voltwise-webapp
+    container_name: voltwise-webapp
+    depends_on:
+      - core
+    ports:
+      - "8081:80"
+
+volumes:
+  postgres-data:
