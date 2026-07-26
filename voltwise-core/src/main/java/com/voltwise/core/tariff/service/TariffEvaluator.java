@@ -43,7 +43,12 @@ public class TariffEvaluator {
         if (tier < 0) {
             tier = 0;
         }
-        return config.getPenaltyMultiplier() + tier * config.getPenaltyIncrement();
+        double multiplier = config.getPenaltyMultiplier() + tier * config.getPenaltyIncrement();
+        double cap = config.getPenaltyMaxMultiplier();
+        if (cap > 0 && multiplier > cap) {
+            return cap;
+        }
+        return multiplier;
     }
 
     private void evaluateAppliance(HomeLiveState state, TelemetryMessage message, double energyWh,
@@ -59,9 +64,11 @@ public class TariffEvaluator {
             metric.setConsecutiveBreaches(metric.getConsecutiveBreaches() + 1);
             if (metric.getConsecutiveBreaches() >= config.getConsecutiveBreachLimit() && !metric.isAnomalous()) {
                 metric.setAnomalous(true);
+                int overage = Math.max(0, (int) Math.round((message.watt() / metric.getSafeLimitWatt() - 1d) * 100d));
                 triggers.add(AlertTrigger.notifiable(EventType.APPLIANCE_ANOMALY,
-                        "Appliance '" + metric.getName() + "' exceeded its safe limit for "
-                                + metric.getConsecutiveBreaches() + " consecutive cycles"));
+                        "“" + metric.getName() + "” güvenli limiti %" + overage + " aştı ("
+                                + Math.round(message.watt()) + "W > " + Math.round(metric.getSafeLimitWatt())
+                                + "W, " + metric.getConsecutiveBreaches() + " ardışık döngü)"));
             }
         } else {
             metric.setConsecutiveBreaches(0);
@@ -76,7 +83,7 @@ public class TariffEvaluator {
             if (!state.isBreachedAt100()) {
                 state.setBreachedAt100(true);
                 triggers.add(AlertTrigger.notifiable(EventType.QUOTA_BREACH_100,
-                        "Home '" + state.getName() + "' reached 100% of its budget quota"));
+                        state.getName() + " bütçesinin %100'üne ulaştı — ceza tarifesi devrede"));
             }
             if (!state.isPenaltyActive()) {
                 state.setPenaltyActive(true);
@@ -88,7 +95,7 @@ public class TariffEvaluator {
         } else if (ratio >= config.getWarningThreshold() && !state.isWarnedAt80()) {
             state.setWarnedAt80(true);
             triggers.add(AlertTrigger.notifiable(EventType.QUOTA_WARNING_80,
-                    "Home '" + state.getName() + "' reached 80% of its budget quota"));
+                    state.getName() + " bütçesinin %80'ine ulaştı"));
         }
     }
 }

@@ -39,6 +39,7 @@ spring:
             enable: true
 
 voltwise:
+  seed-demo: ${SEED_DEMO_DATA:true}
   kafka:
     telemetry-topic: ${KAFKA_TELEMETRY_TOPIC:voltwise.telemetry}
     registration-topic: ${KAFKA_REGISTRATION_TOPIC:voltwise.registration}
@@ -51,6 +52,7 @@ voltwise:
     penalty-multiplier: ${PENALTY_MULTIPLIER:1.5}
     penalty-step: ${PENALTY_STEP:0.2}
     penalty-increment: ${PENALTY_INCREMENT:0.5}
+    penalty-max-multiplier: ${PENALTY_MAX_MULTIPLIER:3.0}
     dominant-appliance-threshold: ${DOMINANT_APPLIANCE_THRESHOLD:0.5}
     consecutive-breach-limit: ${CONSECUTIVE_BREACH_LIMIT:3}
   mail:

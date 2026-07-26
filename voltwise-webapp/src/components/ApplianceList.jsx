@@ -1,4 +1,4 @@
-export function ApplianceList({ appliances }) {
+export function ApplianceList({ appliances, onRemove }) {
   return (
     <div className="appliance-list">
       {appliances.map((appliance) => (
@@ -15,6 +15,17 @@ export function ApplianceList({ appliances }) {
             <span className="muted">limit {appliance.safeLimitWatt.toFixed(0)} W</span>
             {appliance.consecutiveBreaches > 0 && (
               <span className="breach-count">{appliance.consecutiveBreaches} ardışık aşım</span>
+            )}
+            {onRemove && (
+              <button
+                type="button"
+                className="appliance-remove"
+                aria-label={`${appliance.name} cihazını kaldır`}
+                title="Kaldır"
+                onClick={() => onRemove(appliance.applianceId, appliance.name)}
+              >
+                ×
+              </button>
             )}
           </div>
         </div>

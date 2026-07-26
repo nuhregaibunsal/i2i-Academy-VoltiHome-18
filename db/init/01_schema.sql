@@ -52,3 +52,17 @@ CREATE INDEX IF NOT EXISTS idx_appliance_home ON appliance (home_id);
 CREATE INDEX IF NOT EXISTS idx_snapshot_home_recorded ON consumption_snapshot (home_id, recorded_at);
 CREATE INDEX IF NOT EXISTS idx_event_home_occurred ON event_log (home_id, occurred_at);
 CREATE INDEX IF NOT EXISTS idx_recommendation_home_created ON ai_recommendation (home_id, created_at);
+
+CREATE TABLE IF NOT EXISTS notification (
+    id         BIGSERIAL PRIMARY KEY,
+    home_id    BIGINT       NOT NULL,
+    home_name  VARCHAR(255) NOT NULL,
+    type       VARCHAR(64)  NOT NULL,
+    message    VARCHAR(512) NOT NULL,
+    read_flag  BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    CONSTRAINT fk_notification_home FOREIGN KEY (home_id) REFERENCES home (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_notification_created ON notification (created_at);
+CREATE INDEX IF NOT EXISTS idx_notification_home_created ON notification (home_id, created_at);

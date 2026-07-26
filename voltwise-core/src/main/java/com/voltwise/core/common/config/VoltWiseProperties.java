@@ -39,6 +39,7 @@ public class VoltWiseProperties {
         private double penaltyMultiplier;
         private double penaltyStep;
         private double penaltyIncrement;
+        private double penaltyMaxMultiplier;
         private double dominantApplianceThreshold;
         private int consecutiveBreachLimit;
     }

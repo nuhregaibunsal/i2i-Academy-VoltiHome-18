@@ -4,8 +4,16 @@ function formatCurrency(value) {
   return value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function HomeCard({ home, onSelect }) {
+function formatEta(seconds) {
+  if (seconds < 60) return '<1 dk';
+  const mins = Math.round(seconds / 60);
+  if (mins < 60) return `~${mins} dk`;
+  return `~${Math.round(mins / 60)} sa`;
+}
+
+export function HomeCard({ home, onSelect, secondsToBreach }) {
   const state = home.quotaBreached ? 'breach' : home.budgetUsageRatio >= 0.8 ? 'warn' : 'safe';
+  const showEta = !home.quotaBreached && typeof secondsToBreach === 'number';
 
   return (
     <button type="button" className={`card home-card state-${state}`} onClick={() => onSelect(home.homeId)}>
@@ -30,6 +38,13 @@ export function HomeCard({ home, onSelect }) {
         <span className="readout">{formatCurrency(home.accumulatedCost)}</span>
         <span className="readout-sep">/ {formatCurrency(home.budgetLimit)} ₺</span>
       </div>
+
+      {showEta && (
+        <div className="home-card-eta">
+          <span className="eta-dot" /> {formatEta(secondsToBreach)} sonra aşım
+        </div>
+      )}
+
       <div className="home-card-foot">
         <span className="unit-label">{home.applianceCount} cihaz</span>
         <span className="unit-label">detay →</span>

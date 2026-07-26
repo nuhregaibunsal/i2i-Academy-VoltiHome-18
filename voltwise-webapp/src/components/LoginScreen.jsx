@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { api } from '../api/client.js';
 import { useToast } from './ToastProvider.jsx';
+import { Icon } from './Icon.jsx';
 
 export function LoginScreen({ onEnter }) {
   const notify = useToast();
   const [mode, setMode] = useState('choose');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('testuser@example.com');
+  const [password, setPassword] = useState('123456');
   const [loading, setLoading] = useState(false);
 
   async function submitConsumer(event) {
@@ -26,20 +27,20 @@ export function LoginScreen({ onEnter }) {
     <div className="login-screen">
       <div className="login-card">
         <div className="login-brand">
-          <span className="brand-mark">⚡</span>
-          <h1>VoltWise</h1>
+          <span className="brand-mark"><Icon name="bolt" size={30} /></span>
+          <h1>VoltiHome</h1>
           <p className="muted">Gerçek zamanlı enerji izleme ve bütçe denetimi</p>
         </div>
 
         {mode === 'choose' && (
           <div className="role-grid">
             <button type="button" className="role-card" onClick={() => onEnter({ role: 'seller' })}>
-              <span className="role-icon">🏢</span>
+              <span className="role-icon"><Icon name="building" size={28} /></span>
               <strong>Satıcı</strong>
               <span className="muted">Tüm evleri yönet ve izle, yeni ev kaydet</span>
             </button>
             <button type="button" className="role-card" onClick={() => setMode('consumer')}>
-              <span className="role-icon">🏠</span>
+              <span className="role-icon"><Icon name="home" size={28} /></span>
               <strong>Kullanıcı</strong>
               <span className="muted">Kendi evinin tüketim ve tasarruf bilgileri</span>
             </button>

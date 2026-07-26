@@ -2,6 +2,7 @@ package com.voltwise.core.home.service;
 
 import com.voltwise.core.ai.domain.AiRecommendation;
 import com.voltwise.core.ai.domain.AiRecommendationRepository;
+import com.voltwise.core.common.exception.BadRequestException;
 import com.voltwise.core.common.exception.ResourceNotFoundException;
 import com.voltwise.core.common.exception.UnauthorizedException;
 import com.voltwise.core.common.state.ApplianceLiveMetric;
@@ -12,6 +13,8 @@ import com.voltwise.core.home.domain.ConsumptionSnapshot;
 import com.voltwise.core.home.domain.ConsumptionSnapshotRepository;
 import com.voltwise.core.home.domain.Home;
 import com.voltwise.core.home.domain.HomeRepository;
+import com.voltwise.core.home.dto.AnomalousApplianceInfo;
+import com.voltwise.core.home.dto.ApplianceRequest;
 import com.voltwise.core.home.dto.ApplianceStatusResponse;
 import com.voltwise.core.home.dto.ConsumerLoginRequest;
 import com.voltwise.core.home.dto.ConsumerLoginResponse;
@@ -31,6 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 
@@ -82,6 +86,42 @@ public class HomeService {
         return toRegisteredResponse(saved);
     }
 
+    @Transactional
+    public HomeStatusResponse addAppliance(Long homeId, ApplianceRequest request) {
+        Home home = homeRepository.findById(homeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Home " + homeId + " is not registered"));
+        Appliance appliance = new Appliance();
+        appliance.setName(request.name());
+        appliance.setSafeLimitWatt(request.safeLimitWatt());
+        appliance.setNominalWatt(request.nominalWatt());
+        home.addAppliance(appliance);
+        Home saved = homeRepository.save(home);
+
+        liveStateStore.mutate(homeId, state -> saved.getAppliances().forEach(a ->
+                state.getAppliances().computeIfAbsent(a.getId(), id ->
+                        new ApplianceLiveMetric(a.getId(), a.getName(), a.getSafeLimitWatt(), 0d, 0d, 0, false))));
+        registrationEventPublisher.publish(toRegistrationEvent(saved));
+        return getStatus(homeId);
+    }
+
+    @Transactional
+    public HomeStatusResponse removeAppliance(Long homeId, Long applianceId) {
+        Home home = homeRepository.findById(homeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Home " + homeId + " is not registered"));
+        if (home.getAppliances().size() <= 1) {
+            throw new BadRequestException("Bir evde en az bir cihaz bulunmalı");
+        }
+        boolean removed = home.getAppliances().removeIf(a -> a.getId().equals(applianceId));
+        if (!removed) {
+            throw new ResourceNotFoundException("Appliance " + applianceId + " not found in home " + homeId);
+        }
+        Home saved = homeRepository.save(home);
+
+        liveStateStore.mutate(homeId, state -> state.getAppliances().remove(applianceId));
+        registrationEventPublisher.publish(toRegistrationEvent(saved));
+        return getStatus(homeId);
+    }
+
     @Transactional(readOnly = true)
     public ConsumerLoginResponse consumerLogin(ConsumerLoginRequest request) {
         return homeRepository.findByContactEmailIgnoreCase(request.email().trim()).stream()
@@ -107,12 +147,15 @@ public class HomeService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<ConsumptionHistoryPoint> getHistory(Long homeId, int page, int size) {
+    public PagedResponse<ConsumptionHistoryPoint> getHistory(Long homeId, int page, int size,
+                                                             Instant from, Instant to) {
         if (!homeRepository.existsById(homeId)) {
             throw new ResourceNotFoundException("Home " + homeId + " is not registered");
         }
-        Page<ConsumptionSnapshot> result = snapshotRepository.findByHomeId(homeId,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "recordedAt")));
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "recordedAt"));
+        Page<ConsumptionSnapshot> result = (from != null && to != null)
+                ? snapshotRepository.findByHomeIdAndRecordedAtBetween(homeId, from, to, pageable)
+                : snapshotRepository.findByHomeId(homeId, pageable);
         return PagedResponse.of(result, result.getContent().stream().map(this::toHistoryPoint).toList());
     }
 
@@ -163,9 +206,21 @@ public class HomeService {
     }
 
     private HomeSummaryResponse toSummary(HomeLiveState state) {
+        List<AnomalousApplianceInfo> anomalous = state.getAppliances().values().stream()
+                .filter(ApplianceLiveMetric::isAnomalous)
+                .map(m -> new AnomalousApplianceInfo(m.getApplianceId(), m.getName(), m.getLastWatt(),
+                        m.getSafeLimitWatt(), overagePercent(m.getLastWatt(), m.getSafeLimitWatt())))
+                .toList();
         return new HomeSummaryResponse(state.getHomeId(), state.getName(), state.getBudgetLimit(),
                 state.getAccumulatedCost(), state.budgetUsageRatio(), state.isPenaltyActive(),
-                state.isBreachedAt100(), hasAnomaly(state), state.getAppliances().size());
+                state.isBreachedAt100(), !anomalous.isEmpty(), anomalous, state.getAppliances().size());
+    }
+
+    private int overagePercent(double watt, double safeLimit) {
+        if (safeLimit <= 0) {
+            return 0;
+        }
+        return Math.max(0, (int) Math.round((watt / safeLimit - 1d) * 100d));
     }
 
     private HomeStatusResponse toStatus(HomeLiveState state) {

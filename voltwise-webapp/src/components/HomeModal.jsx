@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { usePolling } from '../hooks/usePolling.js';
 import { useToast } from './ToastProvider.jsx';
 import { ApplianceList } from './ApplianceList.jsx';
-import { ConsumptionChart } from './ConsumptionChart.jsx';
+import { ApplianceBreakdown } from './ApplianceBreakdown.jsx';
+import { HistoryChart } from './HistoryChart.jsx';
+import { RecommendationList } from './RecommendationList.jsx';
+import { AddApplianceModal } from './AddApplianceModal.jsx';
 import { SkeletonBlock } from './Skeleton.jsx';
 
 function formatCurrency(value) {
@@ -12,24 +15,41 @@ function formatCurrency(value) {
 
 export function HomeModal({ homeId, onClose }) {
   const notify = useToast();
+  const [addOpen, setAddOpen] = useState(false);
   const { data: status, loading, error } = usePolling(() => api.getStatus(homeId), 2000, true);
-  const { data: history } = usePolling(() => api.getHistory(homeId), 8000, true);
+  const { data: recommendations } = usePolling(() => api.getRecommendations(homeId), 10000, true);
 
   useEffect(() => {
-    if (error) {
-      notify(error);
-    }
+    if (error) notify(error);
   }, [error, notify]);
 
   useEffect(() => {
     function onKey(event) {
-      if (event.key === 'Escape') {
-        onClose();
-      }
+      if (event.key === 'Escape') onClose();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  async function handleAdd(payload) {
+    try {
+      await api.addAppliance(homeId, payload);
+      notify(`“${payload.name}” eklendi`, 'success');
+      setAddOpen(false);
+    } catch (err) {
+      notify(err.message);
+    }
+  }
+
+  async function handleRemove(applianceId, name) {
+    if (!window.confirm(`“${name}” cihazı kaldırılsın mı?`)) return;
+    try {
+      await api.removeAppliance(homeId, applianceId);
+      notify(`“${name}” kaldırıldı`, 'success');
+    } catch (err) {
+      notify(err.message);
+    }
+  }
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -64,16 +84,29 @@ export function HomeModal({ homeId, onClose }) {
               </div>
             </div>
 
-            <h4>Cihazlar</h4>
-            <ApplianceList appliances={status.appliances} />
+            <div className="section-head">
+              <h4>Cihazlar</h4>
+              <button type="button" className="link-button" onClick={() => setAddOpen(true)}>
+                + Cihaz ekle
+              </button>
+            </div>
+            <ApplianceList appliances={status.appliances} onRemove={handleRemove} />
 
-            <h4>Günlük Tüketim Trendi</h4>
-            <ConsumptionChart history={history?.content} />
+            <h4>Cihaz Bazında Tüketim</h4>
+            <ApplianceBreakdown appliances={status.appliances} />
+
+            <h4>Tüketim Trendi</h4>
+            <HistoryChart homeId={homeId} />
+
+            <h4>AI Tasarruf Tavsiyeleri</h4>
+            <RecommendationList recommendations={recommendations?.content} />
           </div>
         ) : (
           <p className="muted">Veri yüklenemedi.</p>
         )}
       </div>
+
+      {addOpen && <AddApplianceModal onConfirm={handleAdd} onClose={() => setAddOpen(false)} />}
     </div>
   );
 }

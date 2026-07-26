@@ -7,12 +7,14 @@ import com.voltwise.core.home.dto.HomeSummaryResponse;
 import com.voltwise.core.home.dto.RecommendationResponse;
 import com.voltwise.core.home.dto.RegisterHomeRequest;
 import com.voltwise.core.common.web.PagedResponse;
+import com.voltwise.core.home.dto.ApplianceRequest;
 import com.voltwise.core.home.service.HomeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,8 +58,21 @@ public class HomeController {
     @Operation(summary = "Get the paginated consumption history of a home from PostgreSQL (newest first)")
     public PagedResponse<ConsumptionHistoryPoint> history(@PathVariable Long homeId,
                                                           @RequestParam(defaultValue = "0") int page,
-                                                          @RequestParam(defaultValue = "100") int size) {
-        return homeService.getHistory(homeId, page, size);
+                                                          @RequestParam(defaultValue = "100") int size,
+                                                          @RequestParam(required = false) String from,
+                                                          @RequestParam(required = false) String to) {
+        return homeService.getHistory(homeId, page, size, parseInstant(from), parseInstant(to));
+    }
+
+    private java.time.Instant parseInstant(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return java.time.Instant.parse(value);
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     @GetMapping("/{homeId}/recommendations")
@@ -66,5 +81,17 @@ public class HomeController {
                                                                  @RequestParam(defaultValue = "0") int page,
                                                                  @RequestParam(defaultValue = "20") int size) {
         return homeService.getRecommendations(homeId, page, size);
+    }
+
+    @PostMapping("/{homeId}/appliances")
+    @Operation(summary = "Add an appliance to an existing home and re-sync the simulation")
+    public HomeStatusResponse addAppliance(@PathVariable Long homeId, @Valid @RequestBody ApplianceRequest request) {
+        return homeService.addAppliance(homeId, request);
+    }
+
+    @DeleteMapping("/{homeId}/appliances/{applianceId}")
+    @Operation(summary = "Remove an appliance from a home and re-sync the simulation")
+    public HomeStatusResponse removeAppliance(@PathVariable Long homeId, @PathVariable Long applianceId) {
+        return homeService.removeAppliance(homeId, applianceId);
     }
 }

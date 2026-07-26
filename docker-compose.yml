@@ -45,6 +45,7 @@ services:
   ignite:
     image: apacheignite/ignite:2.16.0
     container_name: voltwise-ignite
+    platform: linux/amd64
     environment:
       OPTION_LIBS: ignite-rest-http
       JVM_OPTS: "-Xms256m -Xmx512m"
@@ -89,8 +90,10 @@ services:
       PENALTY_MULTIPLIER: ${PENALTY_MULTIPLIER:-1.5}
       PENALTY_STEP: ${PENALTY_STEP:-0.2}
       PENALTY_INCREMENT: ${PENALTY_INCREMENT:-0.5}
+      PENALTY_MAX_MULTIPLIER: ${PENALTY_MAX_MULTIPLIER:-3.0}
       DOMINANT_APPLIANCE_THRESHOLD: ${DOMINANT_APPLIANCE_THRESHOLD:-0.5}
       CONSECUTIVE_BREACH_LIMIT: ${CONSECUTIVE_BREACH_LIMIT:-3}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
     ports:
       - "8080:8080"
 
@@ -105,6 +108,7 @@ services:
       KAFKA_TELEMETRY_TOPIC: ${KAFKA_TELEMETRY_TOPIC:-voltwise.telemetry}
       KAFKA_REGISTRATION_TOPIC: ${KAFKA_REGISTRATION_TOPIC:-voltwise.registration}
       SIMULATION_INTERVAL_MS: ${SIMULATION_INTERVAL_MS:-2000}
+      SIMULATION_ANOMALY_PROBABILITY: ${SIMULATION_ANOMALY_PROBABILITY:-0.15}
 
   webapp:
     build: ./voltwise-webapp
