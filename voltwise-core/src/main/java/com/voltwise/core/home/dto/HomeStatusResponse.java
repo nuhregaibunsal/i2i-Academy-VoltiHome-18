@@ -15,5 +15,7 @@ public record HomeStatusResponse(
         boolean breachedAt100,
         boolean quotaBreached,
         boolean hasAnomaly,
+        int penaltyTier,
+        double tariffMultiplier,
         List<ApplianceStatusResponse> appliances) {
 }

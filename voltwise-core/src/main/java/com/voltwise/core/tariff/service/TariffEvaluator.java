@@ -51,6 +51,27 @@ public class TariffEvaluator {
         return multiplier;
     }
 
+    public int tierOf(double usageRatio) {
+        if (usageRatio < config.getBreachThreshold()) {
+            return -1;
+        }
+        int tier = (int) Math.floor((usageRatio - config.getBreachThreshold()) / config.getPenaltyStep());
+        if (tier < 0) {
+            tier = 0;
+        }
+        double cap = config.getPenaltyMaxMultiplier();
+        if (cap > 0 && config.getPenaltyIncrement() > 0) {
+            int maxTier = (int) Math.floor((cap - config.getPenaltyMultiplier()) / config.getPenaltyIncrement());
+            if (maxTier < 0) {
+                maxTier = 0;
+            }
+            if (tier > maxTier) {
+                tier = maxTier;
+            }
+        }
+        return tier;
+    }
+
     private void evaluateAppliance(HomeLiveState state, TelemetryMessage message, double energyWh,
                                    List<AlertTrigger> triggers) {
         ApplianceLiveMetric metric = state.getAppliances().get(message.applianceId());

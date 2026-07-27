@@ -7,7 +7,9 @@ import { ApplianceBreakdown } from './ApplianceBreakdown.jsx';
 import { HistoryChart } from './HistoryChart.jsx';
 import { RecommendationList } from './RecommendationList.jsx';
 import { AddApplianceModal } from './AddApplianceModal.jsx';
+import { TierLadder } from './TierLadder.jsx';
 import { SkeletonBlock } from './Skeleton.jsx';
+import { resolveTariff, formatMultiplier } from '../lib/tariff.js';
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} TL`;
@@ -91,9 +93,14 @@ export function HomeModal({ homeId, onClose }) {
               </div>
               <div className="summary-tile">
                 <span className="muted">Tarife</span>
-                <strong>{status.penaltyActive ? 'Ceza' : 'Standart'}</strong>
+                <strong>
+                  {status.penaltyActive ? formatMultiplier(resolveTariff(status).multiplier) : 'Standart'}
+                </strong>
               </div>
             </div>
+
+            <h4>Ceza Tarifesi Kademeleri</h4>
+            <TierLadder source={status} />
 
             <div className="section-head">
               <h4>Cihazlar</h4>

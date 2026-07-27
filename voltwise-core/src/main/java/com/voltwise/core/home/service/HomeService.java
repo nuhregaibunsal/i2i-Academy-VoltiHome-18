@@ -47,19 +47,22 @@ public class HomeService {
     private final LiveStateStore liveStateStore;
     private final RegistrationEventPublisher registrationEventPublisher;
     private final PasswordEncoder passwordEncoder;
+    private final com.voltwise.core.tariff.service.TariffEvaluator tariffEvaluator;
 
     public HomeService(HomeRepository homeRepository,
                        ConsumptionSnapshotRepository snapshotRepository,
                        AiRecommendationRepository recommendationRepository,
                        LiveStateStore liveStateStore,
                        RegistrationEventPublisher registrationEventPublisher,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       com.voltwise.core.tariff.service.TariffEvaluator tariffEvaluator) {
         this.homeRepository = homeRepository;
         this.snapshotRepository = snapshotRepository;
         this.recommendationRepository = recommendationRepository;
         this.liveStateStore = liveStateStore;
         this.registrationEventPublisher = registrationEventPublisher;
         this.passwordEncoder = passwordEncoder;
+        this.tariffEvaluator = tariffEvaluator;
     }
 
     @Transactional
@@ -220,9 +223,11 @@ public class HomeService {
                 .map(m -> new AnomalousApplianceInfo(m.getApplianceId(), m.getName(), m.getLastWatt(),
                         m.getSafeLimitWatt(), overagePercent(m.getLastWatt(), m.getSafeLimitWatt())))
                 .toList();
+        double ratio = state.budgetUsageRatio();
         return new HomeSummaryResponse(state.getHomeId(), state.getName(), state.getBudgetLimit(),
-                state.getAccumulatedCost(), state.budgetUsageRatio(), state.isPenaltyActive(),
-                state.isBreachedAt100(), !anomalous.isEmpty(), anomalous, state.getAppliances().size());
+                state.getAccumulatedCost(), ratio, state.isPenaltyActive(),
+                state.isBreachedAt100(), !anomalous.isEmpty(), anomalous, state.getAppliances().size(),
+                tariffEvaluator.tierOf(ratio), tariffEvaluator.tariffMultiplier(ratio));
     }
 
     private int overagePercent(double watt, double safeLimit) {
@@ -238,10 +243,12 @@ public class HomeService {
                         metric.getSafeLimitWatt(), metric.getLastWatt(), metric.getCumulativeWh(),
                         metric.getConsecutiveBreaches(), metric.isAnomalous()))
                 .toList();
+        double ratio = state.budgetUsageRatio();
         return new HomeStatusResponse(state.getHomeId(), state.getName(), state.getContactEmail(),
                 state.getBudgetLimit(), state.getAccumulatedCost(), state.getAccumulatedEnergyWh(),
-                state.budgetUsageRatio(), state.isPenaltyActive(), state.isWarnedAt80(), state.isBreachedAt100(),
-                state.isBreachedAt100(), hasAnomaly(state), appliances);
+                ratio, state.isPenaltyActive(), state.isWarnedAt80(), state.isBreachedAt100(),
+                state.isBreachedAt100(), hasAnomaly(state), tariffEvaluator.tierOf(ratio),
+                tariffEvaluator.tariffMultiplier(ratio), appliances);
     }
 
     private boolean hasAnomaly(HomeLiveState state) {

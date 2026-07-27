@@ -1130,3 +1130,49 @@ h1, h2, h3, h4 {
   .hero-stats { justify-content: center; }
   .header-right { width: 100%; justify-content: space-between; }
 }
+
+/* ---------- tariff badge & tier ladder ---------- */
+.tariff-badge { display: inline-flex; flex-direction: column; gap: 4px; }
+.tariff-badge-row {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  font-family: var(--mono); font-weight: 700; letter-spacing: 0.02em;
+  border: 1px solid; border-radius: 999px; padding: 3px 9px; font-size: 11.5px;
+  min-width: 78px; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.tariff-badge-tile .tariff-badge-row { font-size: 14px; padding: 5px 12px; min-width: 92px; }
+.tone-standard .tariff-badge-row { color: var(--steel); background: var(--steel-soft); border-color: rgba(109, 133, 152, 0.4); }
+.tone-penalty .tariff-badge-row { color: var(--copper-bright); background: var(--copper-soft); border-color: rgba(224, 134, 60, 0.45); }
+.tone-capped .tariff-badge-row { color: var(--breach); background: rgba(245, 84, 75, 0.12); border-color: rgba(245, 84, 75, 0.45); }
+.tariff-badge-track { height: 3px; width: 100%; border-radius: 2px; background: var(--line); overflow: hidden; }
+.tariff-badge-fill { display: block; height: 100%; border-radius: 2px; background: var(--copper); transition: width 0.4s ease; }
+.tone-capped .tariff-badge-fill { background: var(--breach); }
+
+.tier-ladder { display: flex; flex-direction: column; gap: 12px; }
+.tier-ladder-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.tier-step {
+  position: relative; flex: 1; min-width: 64px; display: flex; flex-direction: column;
+  align-items: center; gap: 3px; padding: 12px 6px 8px; border: 1px solid var(--line);
+  border-radius: 10px; background: var(--ink-900); text-align: center;
+}
+.tier-mult { font-family: var(--mono); font-weight: 700; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tier-range { font-size: 10px; letter-spacing: 0.03em; color: var(--faint); text-transform: uppercase; }
+.tier-cap-note { font-size: 9px; letter-spacing: 0.06em; color: var(--faint); text-transform: uppercase; }
+.tier-step.is-current { border-color: var(--copper); background: var(--copper-soft); box-shadow: inset 0 0 0 1px var(--copper); }
+.tier-step.is-current .tier-mult { color: var(--copper-bright); }
+.tier-step.is-current.is-standard { border-color: var(--steel); background: var(--steel-soft); box-shadow: inset 0 0 0 1px var(--steel); }
+.tier-step.is-current.is-standard .tier-mult { color: var(--text); }
+.tier-step.is-capped { border-color: var(--breach); background: rgba(245, 84, 75, 0.1); box-shadow: inset 0 0 0 1px var(--breach); }
+.tier-step.is-capped .tier-mult { color: var(--breach); }
+.tier-here {
+  position: absolute; top: -9px; font-size: 9px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--copper-bright); background: var(--ink-900);
+  padding: 0 5px; border-radius: 6px; white-space: nowrap;
+}
+.tier-step.is-current.is-standard .tier-here { color: var(--steel); }
+.tier-step.is-capped .tier-here { color: var(--breach); }
+.tier-ladder-caption { margin: 0; font-size: 12.5px; color: var(--muted); }
+.tariff-explain { margin: 6px 0 0; font-size: 13px; color: var(--copper-bright); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tariff-badge-fill { transition: none; }
+}

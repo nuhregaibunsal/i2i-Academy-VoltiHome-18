@@ -12,5 +12,7 @@ public record HomeSummaryResponse(
         boolean quotaBreached,
         boolean hasAnomaly,
         List<AnomalousApplianceInfo> anomalousAppliances,
-        int applianceCount) {
+        int applianceCount,
+        int penaltyTier,
+        double tariffMultiplier) {
 }

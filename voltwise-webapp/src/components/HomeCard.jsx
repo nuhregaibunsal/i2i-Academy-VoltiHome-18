@@ -1,4 +1,5 @@
 import { MeterDial } from './MeterDial.jsx';
+import { TariffBadge } from './TariffBadge.jsx';
 
 function formatCurrency(value) {
   return value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -20,7 +21,7 @@ export function HomeCard({ home, onSelect, secondsToBreach }) {
       <div className="home-card-head">
         <h3>{home.name}</h3>
         <div className="tags">
-          {home.penaltyActive && <span className="tag tag-breach">CEZA</span>}
+          {home.penaltyActive && <TariffBadge source={home} variant="card" />}
           {home.hasAnomaly && <span className="tag tag-warn">ANOMALİ</span>}
         </div>
       </div>

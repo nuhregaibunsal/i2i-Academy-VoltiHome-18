@@ -8,8 +8,10 @@ import { HistoryChart } from './HistoryChart.jsx';
 import { RecommendationList } from './RecommendationList.jsx';
 import { MeterDial } from './MeterDial.jsx';
 import { NotificationBell } from './NotificationBell.jsx';
+import { TierLadder } from './TierLadder.jsx';
 import { Icon } from './Icon.jsx';
 import { SkeletonBlock } from './Skeleton.jsx';
+import { resolveTariff, formatMultiplier } from '../lib/tariff.js';
 
 function formatCurrency(value) {
   return value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -105,14 +107,22 @@ export function ConsumerView({ homeId, homeName, onLogout }) {
                   <span className="unit-label">kWh tüketim</span>
                 </div>
                 <div className="hero-stat">
-                  <span className="readout">{status.penaltyActive ? 'Ceza' : 'Standart'}</span>
-                  <span className="unit-label">tarife</span>
+                  <span className="readout">
+                    {status.penaltyActive ? formatMultiplier(resolveTariff(status).multiplier) : 'Standart'}
+                  </span>
+                  <span className="unit-label">tarife çarpanı</span>
                 </div>
               </div>
               <div className="budget-badges">
                 {status.penaltyActive && <span className="tag tag-breach">CEZA TARİFESİ</span>}
                 {status.hasAnomaly && <span className="tag tag-warn">CİHAZ ANOMALİSİ</span>}
               </div>
+              {status.penaltyActive && (
+                <p className="tariff-explain">
+                  Bütçenizi aştığınız için şu an elektriğiniz normalin{' '}
+                  {formatMultiplier(resolveTariff(status).multiplier)} katı fiyatlanıyor.
+                </p>
+              )}
             </div>
           </section>
 
@@ -127,6 +137,11 @@ export function ConsumerView({ homeId, homeName, onLogout }) {
               <h3>Tasarruf Tavsiyeleri</h3>
               <RecommendationList recommendations={recommendations?.content} />
             </div>
+          </section>
+
+          <section className="card consumer-panel">
+            <h3>Ceza Tarifesi Kademeleri</h3>
+            <TierLadder source={status} />
           </section>
 
           <section className="card consumer-panel">

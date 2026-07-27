@@ -29,7 +29,13 @@ const PATHS = {
       <path d="M10 21v-4h4v4" />
     </>
   ),
-  check: <path d="M4 12l5 5L20 6" />
+  check: <path d="M4 12l5 5L20 6" />,
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="9" rx="1.5" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </>
+  )
 };
 
 export function Icon({ name, size = 22, className }) {
