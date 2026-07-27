@@ -144,6 +144,11 @@ public class HomeService {
     }
 
     @Transactional(readOnly = true)
+    public void republishRegistrations() {
+        homeRepository.findAll().forEach(home -> registrationEventPublisher.publish(toRegistrationEvent(home)));
+    }
+
+    @Transactional(readOnly = true)
     public List<HomeSummaryResponse> listSummaries() {
         return liveStateStore.findAll().stream()
                 .sorted(Comparator.comparing(HomeLiveState::getHomeId))
