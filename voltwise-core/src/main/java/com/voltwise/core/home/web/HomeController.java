@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -93,5 +94,12 @@ public class HomeController {
     @Operation(summary = "Remove an appliance from a home and re-sync the simulation")
     public HomeStatusResponse removeAppliance(@PathVariable Long homeId, @PathVariable Long applianceId) {
         return homeService.removeAppliance(homeId, applianceId);
+    }
+
+    @DeleteMapping("/{homeId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a home and all its data (appliances, history, notifications)")
+    public void deleteHome(@PathVariable Long homeId) {
+        homeService.deleteHome(homeId);
     }
 }

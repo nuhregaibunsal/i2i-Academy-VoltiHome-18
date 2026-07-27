@@ -32,6 +32,10 @@ public class LiveStateStore {
         cache().put(state.getHomeId(), state);
     }
 
+    public void remove(Long homeId) {
+        cache().remove(homeId);
+    }
+
     public Optional<HomeLiveState> find(Long homeId) {
         return Optional.ofNullable(cache().get(homeId));
     }

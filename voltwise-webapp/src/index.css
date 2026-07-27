@@ -980,6 +980,25 @@ h1, h2, h3, h4 {
 }
 .appliance-remove:hover { border-color: var(--breach); color: var(--breach); }
 
+.modal-danger-zone {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+}
+.danger-button {
+  background: transparent;
+  border: 1px solid rgba(245, 84, 75, 0.5);
+  color: var(--breach);
+  border-radius: 9px;
+  padding: 9px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--body);
+}
+.danger-button:hover { background: rgba(245, 84, 75, 0.12); border-color: var(--breach); }
+
 /* ---------- history range tabs ---------- */
 .range-tabs {
   display: inline-flex;

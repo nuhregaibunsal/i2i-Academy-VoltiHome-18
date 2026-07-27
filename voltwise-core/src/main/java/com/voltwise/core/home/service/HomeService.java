@@ -122,6 +122,15 @@ public class HomeService {
         return getStatus(homeId);
     }
 
+    @Transactional
+    public void deleteHome(Long homeId) {
+        if (!homeRepository.existsById(homeId)) {
+            throw new ResourceNotFoundException("Home " + homeId + " is not registered");
+        }
+        homeRepository.deleteById(homeId);
+        liveStateStore.remove(homeId);
+    }
+
     @Transactional(readOnly = true)
     public ConsumerLoginResponse consumerLogin(ConsumerLoginRequest request) {
         return homeRepository.findByContactEmailIgnoreCase(request.email().trim()).stream()

@@ -51,6 +51,7 @@ export const api = {
     request(`/homes/${homeId}/appliances`, { method: 'POST', body: JSON.stringify(payload) }),
   removeAppliance: (homeId, applianceId) =>
     request(`/homes/${homeId}/appliances/${applianceId}`, { method: 'DELETE' }),
+  deleteHome: (homeId) => request(`/homes/${homeId}`, { method: 'DELETE' }),
   consumerLogin: (payload) => request('/auth/consumer-login', { method: 'POST', body: JSON.stringify(payload) }),
   getNotifications: (opts = {}) => {
     const params = new URLSearchParams({ page: opts.page ?? 0, size: opts.size ?? 30 });

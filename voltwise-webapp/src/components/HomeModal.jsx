@@ -51,6 +51,17 @@ export function HomeModal({ homeId, onClose }) {
     }
   }
 
+  async function handleDelete() {
+    if (!window.confirm(`“${status?.name}” evi ve tüm verileri kalıcı olarak silinsin mi?`)) return;
+    try {
+      await api.deleteHome(homeId);
+      notify('Ev silindi', 'success');
+      onClose();
+    } catch (err) {
+      notify(err.message);
+    }
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(event) => event.stopPropagation()}>
@@ -100,6 +111,12 @@ export function HomeModal({ homeId, onClose }) {
 
             <h4>AI Tasarruf Tavsiyeleri</h4>
             <RecommendationList recommendations={recommendations?.content} />
+
+            <div className="modal-danger-zone">
+              <button type="button" className="danger-button" onClick={handleDelete}>
+                Evi sil
+              </button>
+            </div>
           </div>
         ) : (
           <p className="muted">Veri yüklenemedi.</p>
