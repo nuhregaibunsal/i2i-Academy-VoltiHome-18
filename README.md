@@ -19,14 +19,17 @@ into personalized Turkish saving advice by an LLM that is emailed to the househo
 
 ### Event flow
 
-```
-Web App  ──REST──▶  Core ──▶ PostgreSQL (persist)  ──▶ Kafka registration topic ──▶ Sensors
-                     ▲                                                                  │
-                     │                                                                  ▼
-              Apache Ignite ◀── Core ◀────── Kafka telemetry topic ◀──────────── Sensors (wattage)
-                     │
-                     ▼
-        Tariff / anomaly evaluation ──▶ Gemini ──▶ email + PostgreSQL log
+```mermaid
+flowchart LR
+    UI["Web App<br/>(React)"] -->|REST| CORE["VoltWise Core<br/>(Spring Boot)"]
+    CORE -->|persist| PG[("PostgreSQL")]
+    CORE -->|registration topic| K1[["Kafka"]]
+    K1 --> S["Telemetry Sensors"]
+    S -->|wattage, telemetry topic| K2[["Kafka"]]
+    K2 --> CORE
+    CORE <-->|live state & breach counters| IG[("Apache Ignite")]
+    CORE -->|tariff / anomaly breach| AI["Google Gemini"]
+    AI -->|saving advice| MAIL["Email + PostgreSQL log"]
 ```
 
 ## Web App roles
